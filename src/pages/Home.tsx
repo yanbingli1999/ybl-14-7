@@ -5,6 +5,7 @@ import StationOrderPanel from '@/components/Station/StationOrderPanel';
 import StatsPanel from '@/components/StatsPanel/StatsPanel';
 import DispatchResultModal from '@/components/DispatchResultModal/DispatchResultModal';
 import GameOverModal from '@/components/GameOverModal/GameOverModal';
+import MelodyPanel from '@/components/MelodyPanel/MelodyPanel';
 import { getStationProgress } from '@/engine/contractSystem';
 import useGameStore from '@/store/useGameStore';
 import { Train, Candy } from 'lucide-react';
@@ -59,6 +60,8 @@ export default function Home() {
           </div>
 
           <div className="space-y-6">
+            <MelodyPanel />
+
             <div>
               <div className="mb-3 flex items-center gap-2 text-gray-600">
                 <Train className="w-5 h-5" />
@@ -86,6 +89,13 @@ export default function Home() {
             <li>• 匹配度高获得奖励，错装会被扣除罚金</li>
             <li>• 完成订单获得信誉，解锁更多车站</li>
             <li>• 4连消生成炸弹糖（范围消除），5连消生成彩虹糖（消除同色）</li>
+          </ul>
+          <h4 className="font-semibold text-purple-700 mt-3 mb-1.5">🎵 鸣笛乐谱玩法</h4>
+          <ul className="text-sm text-gray-600 space-y-1">
+            <li>• 横向消除生成 <b className="text-pink-500">Do</b>，纵向消除生成 <b className="text-yellow-500">Re</b></li>
+            <li>• 四连炸弹生成 <b className="text-red-500">Mi</b>，彩虹糖生成 <b className="text-purple-500">Fa</b></li>
+            <li>• 每个车站有偏爱的短乐谱，命中乐谱片段发车时会触发奖励</li>
+            <li>• 奖励类型：站台欢迎仪式、金币加成、特殊糖果返还</li>
           </ul>
         </div>
 

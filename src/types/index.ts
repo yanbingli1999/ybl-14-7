@@ -9,6 +9,48 @@ export type CandyType =
 
 export type SpecialCandyType = 'rainbow' | 'bomb' | null;
 
+export type MusicNoteType = 'do' | 're' | 'mi' | 'fa';
+
+export interface MusicNote {
+  id: string;
+  type: MusicNoteType;
+  source: 'horizontal' | 'vertical' | 'bomb' | 'rainbow';
+  timestamp: number;
+}
+
+export type SheetMusicRewardType = 'welcome' | 'bonus' | 'return_candy';
+
+export interface SheetMusicReward {
+  type: SheetMusicRewardType;
+  value: number;
+  description: string;
+}
+
+export interface StationSheetMusic {
+  id: string;
+  name: string;
+  pattern: MusicNoteType[];
+  reward: SheetMusicReward;
+  difficulty: 'easy' | 'medium' | 'hard';
+}
+
+export interface SheetMusicMatch {
+  sheetMusicId: string;
+  sheetMusicName: string;
+  matchedPattern: MusicNoteType[];
+  reward: SheetMusicReward;
+  startIndex: number;
+  endIndex: number;
+}
+
+export interface MelodyDispatchBonus {
+  welcomeMessage: string | null;
+  coinBonus: number;
+  reputationBonus: number;
+  returnedCandies: Partial<Record<CandyType, number>>;
+  matchedSheets: SheetMusicMatch[];
+}
+
 export interface Candy {
   id: string;
   type: CandyType;
@@ -92,6 +134,7 @@ export interface GameState {
   isAnimating: boolean;
   gamePhase: 'playing' | 'dispatching' | 'result' | 'gameover';
   dispatchResult: DispatchResult | null;
+  melodyNotes: MusicNote[];
 }
 
 export interface DispatchResult {
@@ -102,6 +145,7 @@ export interface DispatchResult {
   mismatches: OrderItem[];
   correctItems: OrderItem[];
   reputationChange: number;
+  melodyBonus: MelodyDispatchBonus | null;
 }
 
 export interface StatsStep {

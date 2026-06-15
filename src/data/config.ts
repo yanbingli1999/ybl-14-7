@@ -1,4 +1,4 @@
-import { CandyType, Station, Train, BOARD_SIZE } from '@/types';
+import { CandyType, Station, Train, BOARD_SIZE, MusicNoteType, StationSheetMusic } from '@/types';
 
 export const CANDY_CONFIG: Record<CandyType, { name: string; color: string; points: number; emoji: string }> = {
   strawberry: { name: '草莓糖', color: '#FF6B9D', points: 10, emoji: '🍓' },
@@ -73,4 +73,141 @@ export const GAME_CONFIG = {
   REPUTATION_PER_SUCCESS: 10,
   REPUTATION_PER_FAIL: -5,
   LOAD_PER_MATCH: 1,
+  MELODY_MAX_NOTES: 20,
+  BONUS_COIN_MULTIPLIER: 0.2,
+  BONUS_REPUTATION: 5,
+  RETURN_CANDY_COUNT: 3,
+};
+
+export const MUSIC_NOTE_CONFIG: Record<MusicNoteType, { name: string; emoji: string; solfege: string; color: string }> = {
+  do: { name: 'Do（横向）', emoji: '🎵', solfege: 'Do', color: '#FF6B9D' },
+  re: { name: 'Re（纵向）', emoji: '🎶', solfege: 'Re', color: '#FFD93D' },
+  mi: { name: 'Mi（炸弹）', emoji: '🎼', solfege: 'Mi', color: '#FF4757' },
+  fa: { name: 'Fa（彩虹）', emoji: '🎹', solfege: 'Fa', color: '#9B59B6' },
+};
+
+export const STATION_SHEET_MUSIC: Record<string, StationSheetMusic[]> = {
+  'candy-town': [
+    {
+      id: 'ct-welcome',
+      name: '小镇迎宾曲',
+      pattern: ['do', 're', 'do'],
+      reward: { type: 'welcome', value: 0, description: '触发站台欢迎仪式' },
+      difficulty: 'easy',
+    },
+    {
+      id: 'ct-bonus',
+      name: '甜蜜小调和',
+      pattern: ['do', 'do', 're'],
+      reward: { type: 'bonus', value: 20, description: '金币奖励 +20%' },
+      difficulty: 'easy',
+    },
+    {
+      id: 'ct-return',
+      name: '糖果回旋歌',
+      pattern: ['re', 'mi', 're'],
+      reward: { type: 'return_candy', value: 3, description: '返还3颗随机糖果' },
+      difficulty: 'medium',
+    },
+  ],
+  'lemon-estate': [
+    {
+      id: 'le-welcome',
+      name: '庄园晨曲',
+      pattern: ['re', 'do', 're'],
+      reward: { type: 'welcome', value: 0, description: '触发庄园欢迎仪式' },
+      difficulty: 'easy',
+    },
+    {
+      id: 'le-bonus',
+      name: '柠檬酸爽调',
+      pattern: ['re', 're', 'mi'],
+      reward: { type: 'bonus', value: 25, description: '金币奖励 +25%' },
+      difficulty: 'medium',
+    },
+    {
+      id: 'le-return',
+      name: '柠檬水之歌',
+      pattern: ['do', 'mi', 'fa'],
+      reward: { type: 'return_candy', value: 3, description: '返还3颗柠檬糖' },
+      difficulty: 'hard',
+    },
+  ],
+  'mint-forest': [
+    {
+      id: 'mf-welcome',
+      name: '森林序曲',
+      pattern: ['mi', 're', 'do'],
+      reward: { type: 'welcome', value: 0, description: '触发森林欢迎仪式' },
+      difficulty: 'medium',
+    },
+    {
+      id: 'mf-bonus',
+      name: '清新薄荷风',
+      pattern: ['mi', 'mi', 'fa'],
+      reward: { type: 'bonus', value: 30, description: '金币奖励 +30%' },
+      difficulty: 'medium',
+    },
+    {
+      id: 'mf-return',
+      name: '林间回响',
+      pattern: ['fa', 'mi', 're', 'do'],
+      reward: { type: 'return_candy', value: 4, description: '返还4颗薄荷糖' },
+      difficulty: 'hard',
+    },
+  ],
+  'blueberry-port': [
+    {
+      id: 'bp-welcome',
+      name: '港口号角',
+      pattern: ['fa', 'do', 'mi'],
+      reward: { type: 'welcome', value: 0, description: '触发港口欢迎仪式' },
+      difficulty: 'medium',
+    },
+    {
+      id: 'bp-bonus',
+      name: '航海财富调',
+      pattern: ['fa', 'fa', 'mi', 're'],
+      reward: { type: 'bonus', value: 40, description: '金币奖励 +40%' },
+      difficulty: 'hard',
+    },
+    {
+      id: 'bp-return',
+      name: '浪花华尔兹',
+      pattern: ['do', 're', 'mi', 'fa'],
+      reward: { type: 'return_candy', value: 5, description: '返还5颗蓝莓糖' },
+      difficulty: 'hard',
+    },
+  ],
+  'grape-castle': [
+    {
+      id: 'gc-welcome',
+      name: '皇家迎宾礼',
+      pattern: ['fa', 'mi', 're', 'do', 're'],
+      reward: { type: 'welcome', value: 0, description: '触发皇家欢迎仪式' },
+      difficulty: 'hard',
+    },
+    {
+      id: 'gc-bonus',
+      name: '紫晶荣耀调',
+      pattern: ['mi', 'fa', 'mi', 'fa'],
+      reward: { type: 'bonus', value: 50, description: '金币奖励 +50%' },
+      difficulty: 'hard',
+    },
+    {
+      id: 'gc-return',
+      name: '葡萄藤之歌',
+      pattern: ['do', 're', 'mi', 'fa', 'mi'],
+      reward: { type: 'return_candy', value: 6, description: '返还6颗葡萄糖' },
+      difficulty: 'hard',
+    },
+  ],
+};
+
+export const STATION_WELCOME_MESSAGES: Record<string, string> = {
+  'candy-town': '🎪 糖果小镇居民手持彩旗热烈欢迎您的到来！',
+  'lemon-estate': '🍋 庄园管家献上一杯鲜榨柠檬汁迎接您！',
+  'mint-forest': '🌿 森林精灵们奏响了自然之歌欢迎您！',
+  'blueberry-port': '⚓ 港口工人鸣响汽笛，挥手致意！',
+  'grape-castle': '👑 皇家仪仗队奏响号角恭迎列车长！',
 };

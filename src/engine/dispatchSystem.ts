@@ -1,10 +1,13 @@
-import { Train, StationOrder, DispatchResult, OrderItem, CandyType } from '@/types';
+import { Train, StationOrder, DispatchResult, OrderItem, CandyType, MusicNote, Carriage } from '@/types';
 import { GAME_CONFIG } from '@/data/config';
 import { getCandyLoad } from './loadingSystem';
+import { calculateMelodyBonus } from './melodySystem';
 
 export function calculateDispatchResult(
   train: Train,
-  order: StationOrder
+  order: StationOrder,
+  melodyNotes: MusicNote[] = [],
+  stationId: string = ''
 ): DispatchResult {
   const correctItems: OrderItem[] = [];
   const mismatches: OrderItem[] = [];
@@ -37,12 +40,22 @@ export function calculateDispatchResult(
   const matchRate = totalRequired > 0 ? matchPoints / totalRequired : 0;
   const success = matchRate >= 0.8;
 
-  let reward = 0;
+  let baseReward = 0;
   if (success) {
-    reward = order.reward;
+    baseReward = order.reward;
     if (order.isUrgent) {
-      reward += Math.floor(order.reward * GAME_CONFIG.URGENT_BONUS_RATE);
+      baseReward += Math.floor(order.reward * GAME_CONFIG.URGENT_BONUS_RATE);
     }
+  }
+
+  const melodyBonus =
+    melodyNotes.length > 0 && stationId
+      ? calculateMelodyBonus(melodyNotes, stationId, baseReward)
+      : null;
+
+  let reward = baseReward;
+  if (melodyBonus) {
+    reward += melodyBonus.coinBonus;
   }
 
   let penalty = 0;
@@ -51,9 +64,13 @@ export function calculateDispatchResult(
     penalty = Math.min(penalty, order.penalty);
   }
 
-  const reputationChange = success
+  let reputationChange = success
     ? GAME_CONFIG.REPUTATION_PER_SUCCESS
     : GAME_CONFIG.REPUTATION_PER_FAIL;
+
+  if (melodyBonus) {
+    reputationChange += melodyBonus.reputationBonus;
+  }
 
   return {
     success,
@@ -63,6 +80,27 @@ export function calculateDispatchResult(
     mismatches,
     correctItems,
     reputationChange,
+    melodyBonus,
+  };
+}
+
+export function applyReturnedCandiesToTrain(
+  train: Train,
+  melodyBonus: { returnedCandies: Partial<Record<CandyType, number>> } | null
+): Train {
+  if (!melodyBonus || Object.keys(melodyBonus.returnedCandies).length === 0) {
+    return train;
+  }
+  return {
+    ...train,
+    carriages: train.carriages.map((carriage: Carriage) => {
+      const returnAmount = melodyBonus.returnedCandies[carriage.candyType] || 0;
+      if (returnAmount > 0) {
+        const newLoad = Math.min(carriage.currentLoad + returnAmount, carriage.capacity);
+        return { ...carriage, currentLoad: newLoad };
+      }
+      return { ...carriage };
+    }),
   };
 }
 

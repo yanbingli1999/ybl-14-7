@@ -8,6 +8,7 @@ import {
   DispatchResult,
   PlayerProfile,
   AllStats,
+  MusicNote,
 } from '@/types';
 import {
   createInitialBoard,
@@ -28,6 +29,7 @@ import {
 import { loadCandiesToTrain, clearTrain } from '@/engine/loadingSystem';
 import { calculateDispatchResult } from '@/engine/dispatchSystem';
 import { generateOrder } from '@/engine/contractSystem';
+import { generateNotesFromMatches, appendNotes } from '@/engine/melodySystem';
 import {
   loadProfile,
   saveProfile,
@@ -53,6 +55,7 @@ interface GameStore {
   isAnimating: boolean;
   gamePhase: 'playing' | 'dispatching' | 'result' | 'gameover';
   dispatchResult: DispatchResult | null;
+  melodyNotes: MusicNote[];
   profile: PlayerProfile;
   stats: AllStats;
   showStats: boolean;
@@ -87,6 +90,7 @@ const useGameStore = create<GameStore>((set, get) => {
     isAnimating: false,
     gamePhase: persisted?.gamePhase === 'result' ? 'playing' : (persisted?.gamePhase || 'playing'),
     dispatchResult: null,
+    melodyNotes: persisted?.melodyNotes || [],
     profile: initialProfile,
     stats: initialStats,
     showStats: false,
@@ -104,6 +108,7 @@ const useGameStore = create<GameStore>((set, get) => {
         maxCombo: s.maxCombo,
         gamePhase: s.gamePhase,
         dispatchResult: s.dispatchResult,
+        melodyNotes: s.melodyNotes,
       });
     },
 
@@ -242,6 +247,9 @@ const useGameStore = create<GameStore>((set, get) => {
         const candyCounts = countClearedCandies(allMatches);
         const { train: newTrain } = loadCandiesToTrain(get().train, candyCounts);
 
+        const newNotes = generateNotesFromMatches(allMatches);
+        const updatedNotes = appendNotes(get().melodyNotes, newNotes);
+
         const newMaxCombo = Math.max(get().maxCombo, totalCombo);
 
         set(state => ({
@@ -249,6 +257,7 @@ const useGameStore = create<GameStore>((set, get) => {
           score: state.score + totalScore,
           combo: totalCombo,
           maxCombo: newMaxCombo,
+          melodyNotes: updatedNotes,
           isAnimating: false,
         }));
 
@@ -264,11 +273,11 @@ const useGameStore = create<GameStore>((set, get) => {
     },
 
     dispatchTrain: () => {
-      const { train, currentOrder, profile, gamePhase, moves, maxCombo } = get();
+      const { train, currentOrder, profile, gamePhase, moves, maxCombo, melodyNotes, currentStationId } = get();
 
       if (gamePhase !== 'playing' || !currentOrder) return;
 
-      const result = calculateDispatchResult(train, currentOrder);
+      const result = calculateDispatchResult(train, currentOrder, melodyNotes, currentStationId);
 
       let newCoins = profile.coins + result.reward - result.penalty;
       newCoins = Math.max(0, newCoins);
@@ -323,6 +332,7 @@ const useGameStore = create<GameStore>((set, get) => {
         moves: GAME_CONFIG.INITIAL_MOVES,
         combo: 0,
         maxCombo: 0,
+        melodyNotes: [],
       }));
 
       get().persist();
@@ -346,6 +356,7 @@ const useGameStore = create<GameStore>((set, get) => {
         isAnimating: false,
         gamePhase: 'playing',
         dispatchResult: null,
+        melodyNotes: [],
         profile,
         stats: loadStats(),
       });
@@ -378,6 +389,7 @@ const useGameStore = create<GameStore>((set, get) => {
         currentStationId: stationId,
         currentOrder: newOrder,
         train: clearTrain(state.train),
+        melodyNotes: [],
       }));
 
       get().persist();
