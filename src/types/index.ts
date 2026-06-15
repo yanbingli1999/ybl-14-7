@@ -135,6 +135,7 @@ export interface GameState {
   gamePhase: 'playing' | 'dispatching' | 'result' | 'gameover';
   dispatchResult: DispatchResult | null;
   melodyNotes: MusicNote[];
+  returnedCandyBuffer: Partial<Record<CandyType, number>>;
 }
 
 export interface DispatchResult {

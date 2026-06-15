@@ -9,6 +9,7 @@ import {
   PlayerProfile,
   AllStats,
   MusicNote,
+  CandyType,
 } from '@/types';
 import {
   createInitialBoard,
@@ -27,7 +28,7 @@ import {
   triggerSpecialCandy,
 } from '@/engine/matchEngine';
 import { loadCandiesToTrain, clearTrain } from '@/engine/loadingSystem';
-import { calculateDispatchResult } from '@/engine/dispatchSystem';
+import { calculateDispatchResult, applyReturnedCandiesToTrain } from '@/engine/dispatchSystem';
 import { generateOrder } from '@/engine/contractSystem';
 import { generateNotesFromMatches, appendNotes } from '@/engine/melodySystem';
 import {
@@ -56,6 +57,7 @@ interface GameStore {
   gamePhase: 'playing' | 'dispatching' | 'result' | 'gameover';
   dispatchResult: DispatchResult | null;
   melodyNotes: MusicNote[];
+  returnedCandyBuffer: Partial<Record<CandyType, number>>;
   profile: PlayerProfile;
   stats: AllStats;
   showStats: boolean;
@@ -91,6 +93,7 @@ const useGameStore = create<GameStore>((set, get) => {
     gamePhase: persisted?.gamePhase === 'result' ? 'playing' : (persisted?.gamePhase || 'playing'),
     dispatchResult: null,
     melodyNotes: persisted?.melodyNotes || [],
+    returnedCandyBuffer: persisted?.returnedCandyBuffer || {},
     profile: initialProfile,
     stats: initialStats,
     showStats: false,
@@ -109,6 +112,7 @@ const useGameStore = create<GameStore>((set, get) => {
         gamePhase: s.gamePhase,
         dispatchResult: s.dispatchResult,
         melodyNotes: s.melodyNotes,
+        returnedCandyBuffer: s.returnedCandyBuffer,
       });
     },
 
@@ -273,11 +277,21 @@ const useGameStore = create<GameStore>((set, get) => {
     },
 
     dispatchTrain: () => {
-      const { train, currentOrder, profile, gamePhase, moves, maxCombo, melodyNotes, currentStationId } = get();
+      const { train, currentOrder, profile, gamePhase, moves, maxCombo, melodyNotes, currentStationId, returnedCandyBuffer: existingBuffer } = get();
 
       if (gamePhase !== 'playing' || !currentOrder) return;
 
       const result = calculateDispatchResult(train, currentOrder, melodyNotes, currentStationId);
+
+      const trainWithReturns = applyReturnedCandiesToTrain(train, result.melodyBonus);
+
+      const bonusReturned = result.melodyBonus?.returnedCandies || {};
+      const mergedBuffer: Partial<Record<CandyType, number>> = { ...existingBuffer };
+      for (const [t, c] of Object.entries(bonusReturned)) {
+        if (c && c > 0) {
+          mergedBuffer[t as CandyType] = (mergedBuffer[t as CandyType] || 0) + c;
+        }
+      }
 
       let newCoins = profile.coins + result.reward - result.penalty;
       newCoins = Math.max(0, newCoins);
@@ -311,19 +325,36 @@ const useGameStore = create<GameStore>((set, get) => {
       set({
         gamePhase: 'result',
         dispatchResult: result,
+        train: trainWithReturns,
+        returnedCandyBuffer: mergedBuffer,
         profile: newProfile,
         stats: loadStats(),
       });
 
-      clearGameState();
+      get().persist();
     },
 
     nextOrder: () => {
-      const { currentStationId, profile } = get();
+      const { currentStationId, profile, returnedCandyBuffer: buffer } = get();
       const newOrder = generateOrder(currentStationId, profile.reputation);
 
-      set(state => ({
-        train: clearTrain(state.train),
+      let baseTrain = clearTrain(JSON.parse(JSON.stringify(INITIAL_TRAIN)) as Train);
+      if (Object.keys(buffer).length > 0) {
+        baseTrain = {
+          ...baseTrain,
+          carriages: baseTrain.carriages.map(carriage => {
+            const returnAmount = buffer[carriage.candyType] || 0;
+            if (returnAmount > 0) {
+              const newLoad = Math.min(carriage.currentLoad + returnAmount, carriage.capacity);
+              return { ...carriage, currentLoad: newLoad };
+            }
+            return { ...carriage };
+          }),
+        };
+      }
+
+      set(() => ({
+        train: baseTrain,
         currentOrder: newOrder,
         gamePhase: 'playing',
         dispatchResult: null,
@@ -333,6 +364,7 @@ const useGameStore = create<GameStore>((set, get) => {
         combo: 0,
         maxCombo: 0,
         melodyNotes: [],
+        returnedCandyBuffer: {},
       }));
 
       get().persist();
@@ -357,6 +389,7 @@ const useGameStore = create<GameStore>((set, get) => {
         gamePhase: 'playing',
         dispatchResult: null,
         melodyNotes: [],
+        returnedCandyBuffer: {},
         profile,
         stats: loadStats(),
       });
@@ -390,6 +423,7 @@ const useGameStore = create<GameStore>((set, get) => {
         currentOrder: newOrder,
         train: clearTrain(state.train),
         melodyNotes: [],
+        returnedCandyBuffer: {},
       }));
 
       get().persist();

@@ -151,19 +151,33 @@ export function getStationSheetMusic(stationId: string): StationSheetMusic[] {
   return STATION_SHEET_MUSIC[stationId] || [];
 }
 
-function getReturnCandyTypeFromStation(stationId: string): CandyType {
-  switch (stationId) {
-    case 'lemon-estate':
-      return 'lemon';
-    case 'mint-forest':
-      return 'mint';
-    case 'blueberry-port':
-      return 'blueberry';
-    case 'grape-castle':
-      return 'grape';
-    default:
+interface ReturnRule {
+  candyType: CandyType;
+  count: number;
+}
+
+function getReturnCandiesBySheet(stationId: string, sheetId: string, baseValue: number): ReturnRule[] {
+  switch (`${stationId}:${sheetId}`) {
+    case 'candy-town:ct-return': {
       const basic: CandyType[] = ['strawberry', 'lemon', 'mint', 'blueberry', 'grape'];
-      return basic[Math.floor(Math.random() * basic.length)];
+      const t = basic[Math.floor(Math.random() * basic.length)];
+      return [{ candyType: t, count: baseValue }];
+    }
+    case 'lemon-estate:le-return':
+      return Math.random() < 0.35
+        ? [{ candyType: 'bomb', count: 1 }]
+        : [{ candyType: 'lemon', count: baseValue }];
+    case 'mint-forest:mf-return':
+      return [{ candyType: 'bomb', count: baseValue }];
+    case 'blueberry-port:bp-return':
+      return [{ candyType: 'rainbow', count: baseValue }];
+    case 'grape-castle:gc-return':
+      return [
+        { candyType: 'bomb', count: baseValue },
+        { candyType: 'rainbow', count: 1 },
+      ];
+    default:
+      return [{ candyType: 'strawberry', count: baseValue }];
   }
 }
 
@@ -192,8 +206,10 @@ export function calculateMelodyBonus(
         totalReputationBonus += Math.floor(GAME_CONFIG.BONUS_REPUTATION * 0.5);
         break;
       case 'return_candy': {
-        const candyType = getReturnCandyTypeFromStation(stationId);
-        returnedCandies[candyType] = (returnedCandies[candyType] || 0) + match.reward.value;
+        const rules = getReturnCandiesBySheet(stationId, match.sheetMusicId, match.reward.value);
+        for (const rule of rules) {
+          returnedCandies[rule.candyType] = (returnedCandies[rule.candyType] || 0) + rule.count;
+        }
         totalReputationBonus += GAME_CONFIG.BONUS_REPUTATION;
         break;
       }

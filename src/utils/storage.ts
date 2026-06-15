@@ -12,6 +12,7 @@ import {
   Position,
   DispatchResult,
   MusicNote,
+  CandyType,
 } from '@/types';
 import { STATIONS, INITIAL_TRAIN, GAME_CONFIG } from '@/data/config';
 import { createInitialBoard } from '@/engine/matchEngine';
@@ -36,6 +37,7 @@ export interface PersistedGameState {
   gamePhase: 'playing' | 'dispatching' | 'result' | 'gameover';
   dispatchResult: DispatchResult | null;
   melodyNotes: MusicNote[];
+  returnedCandyBuffer: Partial<Record<CandyType, number>>;
   timestamp: number;
 }
 
@@ -75,6 +77,7 @@ export function loadGameState(profile: PlayerProfile): PersistedGameState | null
     gamePhase: 'playing',
     dispatchResult: null,
     melodyNotes: [],
+    returnedCandyBuffer: {},
     timestamp: Date.now(),
   };
 }
